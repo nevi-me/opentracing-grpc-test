@@ -1,0 +1,88 @@
+buildscript {
+    ext.kotlin_version = '1.2.30'
+    ext.grpc_version = '1.12.0'
+    ext.proto_version = '3.5.1'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.3'
+        classpath 'com.google.gradle:osdetector-gradle-plugin:1.4.0'
+    }
+}
+
+group 'me.nevi'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'idea'
+apply plugin: 'application'
+apply plugin: 'com.google.protobuf'
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: "com.google.osdetector"
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    compile "io.grpc:grpc-netty:$grpc_version"
+    compile "io.grpc:grpc-protobuf:$grpc_version"
+    compile "io.grpc:grpc-stub:$grpc_version"
+
+    compile 'io.opentracing.contrib:opentracing-grpc:0.0.4'
+    compile 'io.jaegertracing:jaeger-core:0.28.0'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:$proto_version"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:$grpc_version"
+        }
+    }
+
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+    generatedFilesBaseDir = "$projectDir/src/generated"
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDir 'src/main/proto'
+        }
+        java {
+            // include self written and generated code
+            srcDirs 'src/main/java', 'src/main/kotlin', 'src/generated/main/java', 'src/generated/main/grpc'
+        }
+    }
+}
+
+// Let intellij projects refer to generated code
+idea {
+    module {
+        sourceDirs += file("${projectDir}/src/generated/main/java")
+        sourceDirs += file("${projectDir}/src/generated/main/grpc")
+    }
+}
